@@ -25,6 +25,9 @@ Pushing is the default, so `push` is optional.
 
 Options:
   -m, --message MSG    stage everything and commit with MSG before pushing
+  -t, --tag NAME       create annotated tag NAME at HEAD and push it too
+                       (an existing tag of that name is pushed unchanged)
+      --tag-message MSG  annotation for -t (default: the tag name)
   -r, --remote NAME    remote whose URL to resolve (default: origin)
   -C, --dir PATH       repository to push (default: current directory)
 
@@ -41,6 +44,9 @@ Examples:
   gh-pusher push                       # same thing, spelled out
   gh-pusher -m "fix: typo"             # commit everything, then push
   gh-pusher push -m "fix: typo"        # same thing
+  gh-pusher -t v1.2.0                  # tag HEAD and push branch + tag
+  gh-pusher -m "0.6.0" -t v0.6.0       # commit, tag it, push both
+  gh-pusher -- --tags                  # push every local tag
   gh-pusher -- --force-with-lease      # pass flags through to git push
 EOF
 }
@@ -144,6 +150,8 @@ run_container() {
     -v "$root:/repo" \
     -e GH_TOKEN \
     -e GH_PUSHER_COMMIT_MSG="$COMMIT_MSG" \
+    -e GH_PUSHER_TAG="$TAG" \
+    -e GH_PUSHER_TAG_MSG="$TAG_MSG" \
     -e GH_PUSHER_REMOTE="$REMOTE" \
     ${ident[@]+"${ident[@]}"} \
     ${EXTRA_DOCKER_ARGS[@]+"${EXTRA_DOCKER_ARGS[@]}"} \
@@ -151,6 +159,8 @@ run_container() {
 }
 
 COMMIT_MSG=""
+TAG=""
+TAG_MSG=""
 REMOTE="origin"
 REPO_DIR="$PWD"
 EXTRA_DOCKER_ARGS=()
@@ -173,6 +183,8 @@ esac
 while [ $# -gt 0 ]; do
   case "$1" in
     -m|--message) COMMIT_MSG=${2:?-m needs a message}; shift 2 ;;
+    -t|--tag)     TAG=${2:?-t needs a tag name}; shift 2 ;;
+    --tag-message) TAG_MSG=${2:?--tag-message needs a message}; shift 2 ;;
     -r|--remote)  REMOTE=${2:?-r needs a remote name}; shift 2 ;;
     -C|--dir)     REPO_DIR=${2:?-C needs a path}; shift 2 ;;
     --)           shift; break ;;

@@ -73,6 +73,8 @@ gh-pusher <command>
 
 Options:
   -m, --message MSG    stage everything and commit with MSG before pushing
+  -t, --tag NAME       create annotated tag NAME at HEAD and push it too
+      --tag-message MSG  annotation for -t (default: the tag name)
   -r, --remote NAME    remote whose URL to resolve (default: origin)
   -C, --dir PATH       repository to push (default: current directory)
 
@@ -89,6 +91,26 @@ Pushing is the default action, so `gh-pusher` and `gh-pusher push` are the same.
 
 Without `-m`, only committed history is pushed and you get a warning if the
 working tree is dirty.
+
+### Tags
+
+`-t` cuts a release in one call — commit, tag, push both refs:
+
+```bash
+gh-pusher -m "0.6.0 — mobile AIDLC" -t v0.6.0
+```
+
+The tag is created *inside* the container, so its annotation gets the same
+identity as the commit and no `user.email` is needed on the host. If the tag
+already exists locally it is pushed unchanged, which is how you ship a tag you
+made earlier with plain `git tag`.
+
+To push every local tag instead of a named one, pass git's own flag through:
+
+```bash
+gh-pusher -- --tags           # all tags
+gh-pusher -- --follow-tags    # only annotated tags reachable from HEAD
+```
 
 `gh-pusher shell` drops you into the container with `git` and `gh` available and
 credentials already wired up — useful for `gh pr create`, interactive rebases, or
