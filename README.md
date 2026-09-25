@@ -68,7 +68,7 @@ to `<login>@users.noreply.github.com` when the account's email is private. So
 ## Usage
 
 ```
-gh-pusher [options] [-- git-push-args...]
+gh-pusher [push] [options] [-- git-push-args...]
 gh-pusher <command>
 
 Options:
@@ -77,12 +77,15 @@ Options:
   -C, --dir PATH       repository to push (default: current directory)
 
 Commands:
+  push       push the current branch (the default; may be omitted)
   login      store a GitHub token in the macOS Keychain
   logout     delete the stored token
   build      rebuild the container image
   shell      open a shell in the container with the repo mounted at /repo
   help       show this message
 ```
+
+Pushing is the default action, so `gh-pusher` and `gh-pusher push` are the same.
 
 Without `-m`, only committed history is pushed and you get a warning if the
 working tree is dirty.

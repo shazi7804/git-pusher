@@ -17,10 +17,11 @@ die()  { printf 'gh-pusher: %s\n' "$1" >&2; exit 1; }
 
 usage() {
   cat <<'EOF'
-Usage: gh-pusher [options] [-- git-push-args...]
+Usage: gh-pusher [push] [options] [-- git-push-args...]
        gh-pusher <command>
 
 Pushes the current git repository to GitHub from inside a container.
+Pushing is the default, so `push` is optional.
 
 Options:
   -m, --message MSG    stage everything and commit with MSG before pushing
@@ -28,6 +29,7 @@ Options:
   -C, --dir PATH       repository to push (default: current directory)
 
 Commands:
+  push       push the current branch (the default; may be omitted)
   login      store a GitHub token in the macOS Keychain (prompts, never echoed)
   logout     delete the stored token
   build      rebuild the container image
@@ -36,7 +38,9 @@ Commands:
 
 Examples:
   gh-pusher                            # push current branch
+  gh-pusher push                       # same thing, spelled out
   gh-pusher -m "fix: typo"             # commit everything, then push
+  gh-pusher push -m "fix: typo"        # same thing
   gh-pusher -- --force-with-lease      # pass flags through to git push
 EOF
 }
@@ -156,6 +160,7 @@ case "${1:-}" in
   logout)       cmd_logout; exit 0 ;;
   build)        require_docker; build_image; exit 0 ;;
   help|-h|--help) usage; exit 0 ;;
+  push)         shift ;;   # explicit form of the default action
   shell)
     shift
     require_docker; ensure_image
@@ -172,7 +177,7 @@ while [ $# -gt 0 ]; do
     -C|--dir)     REPO_DIR=${2:?-C needs a path}; shift 2 ;;
     --)           shift; break ;;
     -*)           die "unknown option: $1 (see gh-pusher help)" ;;
-    *)            die "unexpected argument: $1 (git push flags go after --)" ;;
+    *)            die "unknown command: $1 (see gh-pusher help; git push flags go after --)" ;;
   esac
 done
 
