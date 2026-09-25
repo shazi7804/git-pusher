@@ -33,17 +33,37 @@ The container is removed after every push.
 ```bash
 git clone https://github.com/shazi7804/git-pusher.git ~/Github/git-pusher
 ln -s ~/Github/git-pusher/bin/gh-pusher ~/.local/bin/gh-pusher
-gh-pusher login          # prompts for token, then author name/email
 ```
 
-`login` stores the token in the login keychain under the service `gh-pusher`,
-and the commit identity in `~/.config/gh-pusher/config`.
+That's it. The image builds itself on first use, and if you have ever done a
+`git push` over HTTPS on this Mac there is no token to set up either.
 
-Use a [fine-grained PAT](https://github.com/settings/personal-access-tokens)
-with **Contents: Read and write** on the repos you want to push. Add
-**Pull requests: Write** if you want to open PRs from `gh-pusher shell`.
+### Where the token comes from
 
-The image builds itself on first use.
+Resolved in order, first hit wins:
+
+1. `$GH_TOKEN` or `$GITHUB_TOKEN` in the environment
+2. `gh-pusher`'s own keychain item, created by `gh-pusher login`
+3. the credential git's `osxkeychain` helper already stored for `github.com`
+
+Step 3 is why most setups need nothing: a previous `git push` already left a
+usable PAT in the login keychain. `gh-pusher` prints which source it used on
+every run.
+
+Run `gh-pusher login` only if you want a dedicated token — for example one
+scoped more tightly than the one git already has. It prompts for the token
+without echoing it, so the value never reaches argv or your shell history.
+
+Tokens should be [fine-grained PATs](https://github.com/settings/personal-access-tokens)
+with **Contents: Read and write** on the repos you push. Add
+**Pull requests: Write** to open PRs from `gh-pusher shell`.
+
+### Where the commit identity comes from
+
+If `~/.config/gh-pusher/config` has a name and email, that is used. Otherwise
+the container calls `gh api user` and commits as the token's owner, falling back
+to `<login>@users.noreply.github.com` when the account's email is private. So
+`user.email` never has to be configured on the host.
 
 ## Usage
 
@@ -73,8 +93,11 @@ anything else you'd rather not run against your host git config.
 
 ## What this does and does not isolate
 
-**Isolated:** the token, SSH keys, `user.email`, and every other piece of git
-config. Nothing is added to your Mac's `~/.gitconfig` or `~/.ssh`.
+**Isolated:** the push itself. No token, SSH key, `user.email` or credential
+helper is *added* to your Mac — nothing is written to `~/.gitconfig` or `~/.ssh`,
+and `.git/config` in the repo is never rewritten. Note that reusing an existing
+`osxkeychain` credential reads a secret that was already on the Mac; it does not
+put a new one there.
 
 **Not isolated:** the network path. The container shares the host's network, so
 the push still leaves from your Mac's IP. If you need the push to originate from
